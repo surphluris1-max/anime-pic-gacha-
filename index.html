@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime Viewer</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --panel: #161624;
+      --card: #1d1d30;
+      --text: #f5f7ff;
+      --muted: #bbbbbb;
+      --accent: #4dffe4;
+      --gold: #f2c94c;
+      --danger: #c0392b;
+      --purple: #9742d7;
+      --green: #2e7d32;
+      --gray: #555555;
+      --spin: #412e37;
+      --border: rgba(255, 255, 255, 0.08);
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 10px 12px 20px;
+    }
+
+    .title {
+      margin: 0;
+      padding: 10px 0 14px;
+      text-align: center;
+      color: var(--accent);
+      font-size: clamp(1.9rem, 5vw, 2.5rem);
+      font-weight: 700;
+    }
+
+    .content {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .media-column {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .controls-column {
+      width: 200px;
+      flex: 0 0 200px;
+    }
+
+    .panel-container {
+      position: relative;
+      width: 100%;
+      min-height: 500px;
+      background: #0f0f1a;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-height: 500px;
+      object-fit: contain;
+      cursor: zoom-in;
+      background: #0f0f1a;
+    }
+
+    .empty-panel {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .loading-box {
+      background: var(--panel);
+      padding: 22px;
+      border-radius: 18px;
+      text-align: center;
+      min-width: 320px;
+    }
+
+    .loader-avatar {
+      display: block;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 16px;
+      border-radius: 24px;
+      object-fit: cover;
+      animation: bob 1.2s ease-in-out infinite;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .loading-text {
+      color: #f7e6a1;
+      font-weight: 700;
+      font-size: 1.7rem;
+      letter-spacing: 0.04em;
+    }
+
+    .filters,
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filters {
+      margin-bottom: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      color: white;
+      font-family: inherit;
+      box-shadow: var(--shadow);
+    }
+
+    .mode-button,
+    .type-button,
+    .action-button {
+      width: 100%;
+    }
+
+    .mode-button {
+      background: var(--gold);
+      color: #111111;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 12px;
+    }
+
+    .type-button {
+      background: #333333;
+      padding: 12px;
+    }
+
+    .type-label {
+      color: white;
+      font-size: 0.95rem;
+      margin: 4px 0 8px;
+    }
+
+    .action-button {
+      min-height: 54px;
+      padding: 14px;
+      font-size: 1rem;
+    }
+
+    .spin-button {
+      background: var(--spin);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .save-button {
+      background: var(--purple);
+    }
+
+    .download-button {
+      background: var(--green);
+    }
+
+    .gallery-button {
+      background: var(--gray);
+    }
+
+    .status {
+      margin-top: 12px;
+      text-align: center;
+      color: var(--muted);
+      min-height: 24px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 30;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .dialog {
+      width: min(420px, 100%);
+      background: #111111;
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .dialog h2 {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+    }
+
+    .option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #181828;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .option-row input {
+      margin: 0;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .close-button {
+      background: #333333;
+      padding: 10px 14px;
+    }
+
+    .fullscreen-image {
+      max-width: calc(100vw - 40px);
+      max-height: calc(100vh - 40px);
+      object-fit: contain;
+      cursor: zoom-out;
+    }
+
+    .gallery-dialog {
+      width: min(520px, 100%);
+      max-height: min(85vh, 720px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery-scroll {
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .gallery-item {
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 6px;
+      background: #0f0f1a;
+      cursor: pointer;
+    }
+
+    .gallery-item.selected {
+      border-color: #4dffe4;
+    }
+
+    .gallery-item img {
+      display: block;
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #0f0f1a;
+    }
+
+    .gallery-footer {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .gallery-selected {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .unsave-button {
+      background: #8b1e3f;
+      padding: 10px 14px;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 700px) {
+      .content {
+        flex-direction: column;
+      }
+
+      .controls-column {
+        width: 100%;
+        flex-basis: auto;
+      }
+
+      .panel-container {
+        min-height: 320px;
+      }
+
+      .panel-image {
+        max-height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1 class="title">Anime Viewer</h1>
+
+    <div class="content">
+      <section class="media-column">
+        <div class="panel-container">
+          <img id="panelImage" class="panel-image" alt="Anime media" hidden />
+          <div id="emptyPanel" class="empty-panel">Loading your first image...</div>
+          <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-box">
+                <img
+                  class="loader-avatar"
+                  src="file:///C:/Users/surph/Downloads/kk.png"
+                  alt="Summoning"
+                />
+              <div class="loading-text">Summoning</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="controls-column">
+        <div class="filters">
+          <button id="modeButton" class="mode-button" type="button">★</button>
+          <button id="typeButton" class="type-button" type="button">Catagory</button>
+          <div id="typeValue" class="type-label">Type: Female</div>
+        </div>
+
+        <div class="controls">
+          <button id="spinButton" class="action-button spin-button" type="button">Spin</button>
+          <button id="saveButton" class="action-button save-button" type="button">Save (App)</button>
+          <button id="downloadButton" class="action-button download-button" type="button">Download</button>
+          <button id="galleryButton" class="action-button gallery-button" type="button">View Saved</button>
+        </div>
+      </aside>
+    </div>
+
+    <div id="statusLabel" class="status">Ready</div>
+  </div>
+
+  <div id="modeModal" class="modal" aria-hidden="true">
+    <div class="dialog">
+      <h2>Choose Mode</h2>
+      <div class="option-list">
+        <label class="option-row">
+          <input type="radio" name="mode" value="sfw" checked />
+          <span>SFW</span>
+        </label>
+        <label class="option-row">
+          <input type="radio" name="mode" value="nsfw" />
+          <span>NSFW</span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button class="close-button" type="button" data-close="#modeModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="typeModal" class="modal" aria-hidden="true">
+    <div class="dialog">
+      <h2>Catagory</h2>
+      <div class="option-list">
+        <label class="option-row">
+          <input type="radio" name="category" value="waifu" checked />
+          <span>Female</span>
+        </label>
+        <label class="option-row">
+          <input type="radio" name="category" value="husbando" />
+          <span>Male</span>
+        </label>
+        <label class="option-row">
+          <input type="radio" name="category" value="femboy" />
+          <span>Other</span>
+        </label>
+        <label class="option-row">
+          <input type="radio" name="category" value="media" />
+          <span>GIF/Vid</span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button class="close-button" type="button" data-close="#typeModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="fullscreenModal" class="modal" aria-hidden="true">
+    <img id="fullscreenImage" class="fullscreen-image" alt="Fullscreen anime media" />
+  </div>
+
+  <div id="galleryModal" class="modal" aria-hidden="true">
+    <div class="dialog gallery-dialog">
+      <h2>Saved Images</h2>
+      <div id="galleryScroll" class="gallery-scroll"></div>
+      <div class="gallery-footer">
+        <div id="gallerySelected" class="gallery-selected">Selected: none</div>
+        <button id="unsaveButton" class="unsave-button" type="button">Unsave Selected</button>
+      </div>
+      <div class="note">Saved items are stored in this browser on this device, which is the closest browser equivalent to the Python app's saved folder.</div>
+      <div class="dialog-actions">
+        <button class="close-button" type="button" data-close="#galleryModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const REQUEST_HEADERS = { "User-Agent": "AnimeViewer/1.0" };
+    const SAVED_KEY = "anime_viewer_saved_images_v1";
+
+    const state = {
+      mode: "sfw",
+      category: "waifu",
+      currentImageUrl: null,
+      selectedSavedId: null,
+      loadingCount: 0
+    };
+
+    const panelImage = document.getElementById("panelImage");
+    const fullscreenImage = document.getElementById("fullscreenImage");
+    const emptyPanel = document.getElementById("emptyPanel");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const statusLabel = document.getElementById("statusLabel");
+    const modeButton = document.getElementById("modeButton");
+    const typeButton = document.getElementById("typeButton");
+    const typeValue = document.getElementById("typeValue");
+    const galleryScroll = document.getElementById("galleryScroll");
+    const gallerySelected = document.getElementById("gallerySelected");
+
+    function setStatus(message) {
+      statusLabel.textContent = message;
+    }
+
+    function showLoading() {
+      state.loadingCount += 1;
+      loadingOverlay.style.display = "flex";
+    }
+
+    function hideLoading() {
+      state.loadingCount = Math.max(0, state.loadingCount - 1);
+      if (state.loadingCount === 0) {
+        loadingOverlay.style.display = "none";
+      }
+    }
+
+    function getFilterConfig() {
+      const apiMap = {
+        sfw: {
+          waifu: {
+            url: "https://api.waifu.pics/sfw/waifu",
+            message: null,
+            params: null,
+            parser: "default"
+          },
+          husbando: {
+            url: "https://nekos.best/api/v2/husbando",
+            message: null,
+            params: null,
+            parser: "default"
+          },
+          femboy: {
+            url: "https://api.waifu.pics/sfw/waifu",
+            message: "Femboy is not available in SFW mode. Showing SFW waifu instead",
+            params: null,
+            parser: "default"
+          },
+          media: {
+            url: "https://api.waifu.im/images",
+            message: "Showing SFW animated media",
+            params: {
+              IncludedTags: "waifu",
+              IsNsfw: "False",
+              IsAnimated: "True"
+            },
+            parser: "waifu_im"
+          }
+        },
+        nsfw: {
+          waifu: {
+            url: "https://api.waifu.pics/nsfw/waifu",
+            message: null,
+            params: null,
+            parser: "default"
+          },
+          husbando: {
+            url: null,
+            message: "This category is not available in NSFW mode",
+            params: null,
+            parser: "default"
+          },
+          femboy: {
+            url: "https://api.waifu.pics/nsfw/trap",
+            message: null,
+            params: null,
+            parser: "default"
+          },
+          media: {
+            url: "https://api.waifu.im/images",
+            message: "Showing NSFW animated media",
+            params: {
+              IncludedTags: "waifu",
+              IsNsfw: "True",
+              IsAnimated: "True"
+            },
+            parser: "waifu_im"
+          }
+        }
+      };
+
+      return apiMap[state.mode][state.category];
+    }
+
+    function parseImageUrl(data, parserName) {
+      if (parserName === "waifu_im") {
+        return data.items[0].url;
+      }
+      if ("url" in data) {
+        return data.url;
+      }
+      return data.results[0].url;
+    }
+
+    function getModeLabel() {
+      return state.mode === "sfw" ? "SFW" : "NSFW";
+    }
+
+    function getCategoryLabel() {
+      const labels = {
+        waifu: "Female",
+        husbando: "Male",
+        femboy: "Other",
+        media: "GIF/Vid"
+      };
+      return labels[state.category];
+    }
+
+    function refreshFilterLabels() {
+      if (state.mode === "sfw") {
+        modeButton.style.background = "#f2c94c";
+        modeButton.style.color = "#111111";
+      } else {
+        modeButton.style.background = "#c0392b";
+        modeButton.style.color = "#ffffff";
+      }
+      typeValue.textContent = "Type: " + getCategoryLabel();
+
+      document.querySelectorAll('input[name="mode"]').forEach((input) => {
+        input.checked = input.value === state.mode;
+      });
+      document.querySelectorAll('input[name="category"]').forEach((input) => {
+        input.checked = input.value === state.category;
+      });
+    }
+
+    function openModal(selector) {
+      const modal = document.querySelector(selector);
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(selector) {
+      const modal = document.querySelector(selector);
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function updateDisplayedImage(src) {
+      panelImage.src = src;
+      panelImage.hidden = false;
+      emptyPanel.hidden = true;
+    }
+
+    async function fetchJson(url, params) {
+      const targetUrl = new URL(url);
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => targetUrl.searchParams.set(key, value));
+      }
+
+      const response = await fetch(targetUrl.toString(), {
+        headers: REQUEST_HEADERS
+      });
+      if (!response.ok) {
+        throw new Error("ApiRequestFailed");
+      }
+      return response.json();
+    }
+
+    async function fetchAndShow() {
+      const config = getFilterConfig();
+
+      if (!config.url) {
+        state.currentImageUrl = null;
+        panelImage.hidden = true;
+        emptyPanel.hidden = false;
+        emptyPanel.textContent = "No image loaded";
+        setStatus(config.message);
+        return;
+      }
+
+      showLoading();
+      setStatus(config.message || "Loading...");
+
+      try {
+        const data = await fetchJson(config.url, config.params);
+        const imageUrl = parseImageUrl(data, config.parser);
+
+        state.currentImageUrl = imageUrl;
+        updateDisplayedImage(state.currentImageUrl);
+        setStatus(config.message || "Loaded");
+      } catch (error) {
+        console.error(error);
+        setStatus("Error loading image. Some APIs may block browser requests.");
+        emptyPanel.hidden = false;
+        emptyPanel.textContent = "Could not load image";
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function getSavedImages() {
+      try {
+        return JSON.parse(localStorage.getItem(SAVED_KEY) || "[]");
+      } catch (_error) {
+        return [];
+      }
+    }
+
+    function setSavedImages(items) {
+      localStorage.setItem(SAVED_KEY, JSON.stringify(items));
+    }
+
+    async function saveImage() {
+      if (!state.currentImageUrl) {
+        setStatus("No image loaded");
+        return;
+      }
+
+      try {
+        const savedItems = getSavedImages();
+        if (savedItems.some((item) => item.url === state.currentImageUrl)) {
+          setStatus("Already saved");
+          return;
+        }
+
+        const item = {
+          id: "saved_" + Date.now(),
+          url: state.currentImageUrl,
+          fileName: "anime_" + Date.now()
+        };
+
+        savedItems.unshift(item);
+        setSavedImages(savedItems);
+        setStatus("Saved to app");
+      } catch (error) {
+        console.error(error);
+        setStatus("Save failed");
+      }
+    }
+
+    function downloadImage() {
+      if (!state.currentImageUrl) {
+        setStatus("No image loaded");
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = state.currentImageUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setStatus("Opened image in a new tab");
+    }
+
+    function renderGallery() {
+      const items = getSavedImages();
+      galleryScroll.innerHTML = "";
+
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "note";
+        empty.textContent = "No saved images yet";
+        galleryScroll.appendChild(empty);
+        gallerySelected.textContent = "Selected: none";
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "gallery-item" + (item.id === state.selectedSavedId ? " selected" : "");
+        card.dataset.id = item.id;
+
+        const image = document.createElement("img");
+        image.src = item.url;
+        image.alt = item.fileName;
+        card.appendChild(image);
+
+        card.addEventListener("click", () => {
+          state.selectedSavedId = item.id;
+          gallerySelected.textContent = "Selected: " + item.fileName;
+          renderGallery();
+        });
+
+        galleryScroll.appendChild(card);
+      });
+
+      if (!state.selectedSavedId || !items.some((item) => item.id === state.selectedSavedId)) {
+        state.selectedSavedId = null;
+        gallerySelected.textContent = "Selected: none";
+      }
+    }
+
+    function openGallery() {
+      state.selectedSavedId = null;
+      renderGallery();
+      openModal("#galleryModal");
+    }
+
+    function unsaveSelected() {
+      if (!state.selectedSavedId) {
+        gallerySelected.textContent = "Selected: none";
+        return;
+      }
+
+      const items = getSavedImages().filter((item) => item.id !== state.selectedSavedId);
+      setSavedImages(items);
+      state.selectedSavedId = null;
+      renderGallery();
+      setStatus("Removed from saved");
+    }
+
+    function openFullscreen() {
+      if (!panelImage.src) {
+        setStatus("No image loaded");
+        return;
+      }
+      fullscreenImage.src = panelImage.src;
+      openModal("#fullscreenModal");
+    }
+
+    document.getElementById("spinButton").addEventListener("click", fetchAndShow);
+    document.getElementById("saveButton").addEventListener("click", saveImage);
+    document.getElementById("downloadButton").addEventListener("click", downloadImage);
+    document.getElementById("galleryButton").addEventListener("click", openGallery);
+    document.getElementById("unsaveButton").addEventListener("click", unsaveSelected);
+
+    modeButton.addEventListener("click", () => openModal("#modeModal"));
+    typeButton.addEventListener("click", () => openModal("#typeModal"));
+    panelImage.addEventListener("click", openFullscreen);
+    document.getElementById("fullscreenModal").addEventListener("click", () => closeModal("#fullscreenModal"));
+
+    document.querySelectorAll("[data-close]").forEach((button) => {
+      button.addEventListener("click", () => closeModal(button.dataset.close));
+    });
+
+    document.querySelectorAll('input[name="mode"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.mode = input.value;
+        refreshFilterLabels();
+        setStatus("Mode set to " + getModeLabel());
+        closeModal("#modeModal");
+      });
+    });
+
+    document.querySelectorAll('input[name="category"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.category = input.value;
+        refreshFilterLabels();
+        setStatus("Type set to " + getCategoryLabel());
+        closeModal("#typeModal");
+      });
+    });
+
+    refreshFilterLabels();
+    fetchAndShow();
+  </script>
+</body>
+</html>
