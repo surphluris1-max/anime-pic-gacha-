@@ -193,6 +193,35 @@
       justify-content: space-between;
     }
 
+    .stats-visual {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .banner-frame {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      background: transparent;
+      border-radius: 0;
+      overflow: visible;
+      border: 0;
+    }
+
+    .banner-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+    }
+
+    .banner-image.active {
+      opacity: 1;
+    }
+
     .stat-group {
       display: flex;
       flex-wrap: wrap;
@@ -541,6 +570,11 @@
         align-items: stretch;
       }
 
+      .stats-visual {
+        width: 100%;
+        justify-content: space-between;
+      }
+
       .gallery-scroll {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -574,8 +608,15 @@
             <div id="savesStat" class="stat-pill">Saves: 0</div>
             <div id="spinsStat" class="stat-pill">Spins: 0</div>
           </div>
-          <div class="stat-group">
-            <div id="currentStat" class="stat-pill">Female / Waifu</div>
+          <div class="stats-visual">
+            <div class="banner-frame">
+              <img class="banner-image active" src="gojo1.png" alt="Gojo showcase 1" />
+              <img class="banner-image" src="gojo2.png" alt="Gojo showcase 2" />
+              <img class="banner-image" src="gojo3.png" alt="Gojo showcase 3" />
+            </div>
+            <div class="stat-group">
+              <div id="currentStat" class="stat-pill">Female</div>
+            </div>
           </div>
         </div>
 
@@ -622,7 +663,7 @@
         <label class="option-row"><input type="radio" name="category" value="male" /><span>Male</span></label>
         <label class="option-row"><input type="radio" name="category" value="neko" /><span>Neko</span></label>
         <label class="option-row"><input type="radio" name="category" value="kitsune" /><span>Kitsune</span></label>
-        <label class="option-row"><input type="radio" name="category" value="action" /><span>GIF/Action</span></label>
+        <label class="option-row"><input type="radio" name="category" value="action" /><span>All</span></label>
       </div>
       <div class="dialog-actions">
         <button class="close-button" type="button" data-close="#typeModal">Close</button>
@@ -683,7 +724,7 @@
         label: "Female",
         defaultTag: "waifu",
         tags: [
-          { key: "waifu", label: "Waifu", endpoint: "waifu" },
+          { key: "waifu", label: "Char", endpoint: "waifu" },
           { key: "smile", label: "Smile", endpoint: "smile" },
           { key: "blush", label: "Blush", endpoint: "blush" },
           { key: "happy", label: "Happy", endpoint: "happy" },
@@ -695,7 +736,7 @@
         label: "Male",
         defaultTag: "husbando",
         tags: [
-          { key: "husbando", label: "Husbando", endpoint: "husbando" },
+          { key: "husbando", label: "Char", endpoint: "husbando" },
           { key: "smile", label: "Smile", endpoint: "smile" },
           { key: "blush", label: "Blush", endpoint: "blush" },
           { key: "happy", label: "Happy", endpoint: "happy" },
@@ -728,7 +769,7 @@
         ]
       },
       action: {
-        label: "GIF/Action",
+        label: "All",
         defaultTag: "hug",
         tags: [
           { key: "hug", label: "Hug", endpoint: "hug" },
@@ -751,6 +792,7 @@
       selectedSavedId: null,
       loadingCount: 0,
       autoSpinTimer: null,
+      showcaseTimer: null,
       spinCount: 0,
       saveCount: 0,
       isSpinning: false
@@ -773,6 +815,7 @@
     const autoSpinInterval = document.getElementById("autoSpinInterval");
     const toastRoot = document.getElementById("toastRoot");
     const loaderAvatar = document.getElementById("loaderAvatar");
+    const bannerImages = Array.from(document.querySelectorAll(".banner-image"));
 
     loaderAvatar.addEventListener("error", () => {
       loaderAvatar.src = FALLBACK_AVATAR;
@@ -786,6 +829,23 @@
       setTimeout(() => {
         toast.remove();
       }, 2600);
+    }
+
+    function startShowcase() {
+      if (!bannerImages.length) {
+        return;
+      }
+
+      let currentIndex = 0;
+      if (state.showcaseTimer) {
+        clearInterval(state.showcaseTimer);
+      }
+
+      state.showcaseTimer = setInterval(() => {
+        bannerImages[currentIndex].classList.remove("active");
+        currentIndex = (currentIndex + 1) % bannerImages.length;
+        bannerImages[currentIndex].classList.add("active");
+      }, 4000);
     }
 
     function showLoading() {
@@ -831,7 +891,7 @@
     function renderStats() {
       savesStat.textContent = "Saves: " + state.saveCount;
       spinsStat.textContent = "Spins: " + state.spinCount;
-      currentStat.textContent = CATEGORY_CONFIG[state.category].label + " / " + getTagLabel(state.category, state.tag);
+      currentStat.textContent = CATEGORY_CONFIG[state.category].label;
     }
 
     function getCategoryLabel() {
@@ -1229,6 +1289,7 @@
     syncStatsFromStorage();
     syncSaveCount();
     refreshFilterLabels();
+    startShowcase();
     fetchAndShow();
   </script>
 </body>
